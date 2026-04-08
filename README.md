@@ -29,12 +29,26 @@ graph TD
 
 ## 📁 Project Structure
 ```text
-modules/
-└── subnet/
-    ├── main.tf      # Resource logic (IGW, RT, Subnet)
-    ├── variables.tf # Input parameters
-    └── outputs.tf   # Exported data (Return values)
-```
+
+│main.tf
+│variables.tf
+│providers.tf
+│outputs.tf
+│readme.md
+├── modules/
+│   ├── ec2/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── subnet/
+│   │   └── ...
+│   └── vpc/
+│       └── ...
+├── .gitignore
+├── main.tf              <-- Your root configuration
+├── providers.tf         <-- LocalStack config lives here
+├── variables.tf         <-- Root variables
+└── README.md
 
 ---
 
