@@ -1,142 +1,88 @@
-# 📘 README — Local Modules TF
+# 🛡️ Hyrule Infrastructure: Network Subnet Module
 
-## 📌 Descripción  
-Este módulo crea los recursos básicos de red para una VPC:
+[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.0-purple.svg)](https://www.terraform.io/)
+[![Provider AWS](https://img.shields.io/badge/provider-AWS-orange.svg)](https://registry.terraform.io/providers/hashicorp/aws/latest)
+[![LocalStack Compatible](https://img.shields.io/badge/localstack-compatible-green.svg)](https://localstack.cloud/)
 
-- **Subnet**
-- **Internet Gateway**
-- **Route Table**
-- **Route Table Association**
+## 📖 Description
+This is an **atomic module** designed to provision public subnets with full Internet connectivity. It serves as a foundational building block for the Hyrule architecture, ensuring consistent deployments across **AWS Cloud** and local emulators (**LocalStack**).
 
-Está diseñado para funcionar tanto en **AWS real** como en **LocalStack**, por lo que es ideal para laboratorios, pruebas locales o entornos de desarrollo.
+### Infrastructure Stack
+When invoked, this module deploys the following resources:
+* **Subnet:** An isolated network segment.
+* **Internet Gateway (IGW):** The communication bridge to the outside world.
+* **Route Table:** Custom routing logic for traffic control.
+* **Route Association:** Logical binding between the subnet and its internet egress.
 
 ---
 
-## 📁 Estructura del módulo
-
+## 🏗️ Architecture Overview
+```mermaid
+graph TD
+    VPC[VPC Space] --> Subnet[Module: Subnet]
+    Subnet --> RT[Route Table]
+    RT --> IGW[Internet Gateway]
+    IGW --> Internet((Internet))
 ```
+
+---
+
+## 📁 Project Structure
+```text
 modules/
 └── subnet/
-    ├── main.tf
-    ├── variables.tf
-    └── outputs.tf
+    ├── main.tf      # Resource logic (IGW, RT, Subnet)
+    ├── variables.tf # Input parameters
+    └── outputs.tf   # Exported data (Return values)
 ```
 
 ---
 
-## 🚀 Recursos que crea
+## 🔧 Module Interface (Inputs/Outputs)
 
-### 1. Subnet  
-Crea una subred dentro de la VPC especificada.
+### 📥 Input Variables
+| Variable | Type | Required | Description |
+| :--- | :---: | :---: | :--- |
+| `vpc_id` | `string` | ✅ | The ID of the VPC where the subnet will reside. |
+| `subneta_cidr` | `string` | ✅ | CIDR block for the subnet (e.g., `10.12.1.0/24`). |
+| `availability_zone`| `string` | ✅ | Target AWS AZ (e.g., `us-east-1a`). |
+| `subneta_name` | `string` | ✅ | Prefix for resource tagging and identification. |
 
-### 2. Internet Gateway  
-Permite salida a internet desde la VPC.
-
-### 3. Route Table  
-Incluye una ruta por defecto hacia el Internet Gateway.
-
-### 4. Route Table Association  
-Asocia la subred creada con la tabla de rutas.
-
----
-
-## 🔧 Variables requeridas
-
-| Variable            | Tipo     | Descripción |
-|--------------------|----------|-------------|
-| `vpc_id`           | string   | ID de la VPC donde se creará la subnet |
-| `subneta_cidr`     | string   | CIDR de la subnet |
-| `availability_zone`| string   | Zona de disponibilidad |
-| `subneta_name`     | string   | Nombre base para los recursos |
-
-Ejemplo:
-
-```hcl
-variable "vpc_id" {
-  type = string
-}
-
-variable "subneta_cidr" {
-  type = string
-}
-
-variable "availability_zone" {
-  type = string
-}
-
-variable "subneta_name" {
-  type = string
-}
-```
+### 📤 Output Values
+| Name | Description |
+| :--- | :--- |
+| `subnet_id` | Unique identifier for the created subnet. |
+| `route_table_id` | ID of the associated Route Table. |
 
 ---
 
-## 📤 Outputs
+## 🚀 Quick Implementation
 
-| Output      | Descripción |
-|-------------|-------------|
-| `subnet_id` | ID de la subnet creada |
-| `route_table_id` | ID de la route table creada |
-
-Ejemplo:
+Integrate this module into your root `main.tf` as follows:
 
 ```hcl
-output "subnet_id" {
-  value = aws_subnet.subneta.id
-}
-
-output "route_table_id" {
-  value = aws_route_table.rt1.id
-}
-```
-
----
-
-## 🧩 Ejemplo de uso
-
-```hcl
-module "subnet_module" {
+module "network_dev" {
   source = "./modules/subnet"
 
-  vpc_id            = "vpc-123456"
+  vpc_id            = aws_vpc.main.id
   subneta_cidr      = "10.0.1.0/24"
   availability_zone = "us-east-1a"
-  subneta_name      = "dev-subnet"
+  subneta_name      = "hyrule-dev-public"
 }
 ```
 
 ---
 
-## 🧪 Uso con LocalStack
+## 🧪 Local Lab (LocalStack)
+This module is optimized for local development cycles. To prevent state collisions or "ghost" resources:
 
-Si estás usando LocalStack, asegúrate de configurar el provider AWS así:
+1.  **Provider Configuration:**
+    Ensure your EC2 endpoint points to `http://localhost:4566`.
+   
+2.  **Clean Lifecycle:**
+    If you make deep structural changes, reset your environment:
+    ```bash
+    docker compose down && docker compose up -d
+    terraform init -reconfigure
+    ```
 
-```hcl
-provider "aws" {
-  region                      = "us-east-1"
-  access_key                  = "test"
-  secret_key                  = "test"
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
-
-  endpoints {
-    ec2 = "http://localhost:4566"
-  }
-}
-```
-
-LocalStack no elimina recursos automáticamente, así que si cambias nombres o estructuras, puede ser necesario:
-
-```
-docker compose down
-docker compose up -d
-```
-
----
-
-## 📝 Notas importantes
-
-- LocalStack puede dejar recursos “huérfanos”, así que usa `name_prefix` .
-  
----
