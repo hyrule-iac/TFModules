@@ -30,11 +30,6 @@ graph TD
 ## 📁 Project Structure
 ```text
 
-│main.tf
-│variables.tf
-│providers.tf
-│outputs.tf
-│readme.md
 ├── modules/
 │   ├── ec2/
 │   │   ├── main.tf
